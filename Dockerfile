@@ -32,8 +32,11 @@ FROM postgis/postgis:16-3.4-alpine
 COPY --from=builder /usr/local/lib/postgresql/*.so /usr/local/lib/postgresql/
 COPY --from=builder /usr/local/share/postgresql/extension /usr/local/share/postgresql/extension
 
-# Add Citus to default PostgreSQL config
-RUN echo "shared_preload_libraries='citus'" >> /usr/local/share/postgresql/postgresql.conf.sample
+# Enable commit timestamp tracking and add Citus to default PostgreSQL config
+RUN sed -i -E \
+    -e 's/#(track_commit_timestamp\s*=\s*)off/\1on/' \
+    -e "s/#(shared_preload_libraries\s*=\s*')(')/\1citus\2/" \
+    /usr/local/share/postgresql/postgresql.conf.sample
 
 # Add script to create Citus extension after initdb
 RUN echo "CREATE EXTENSION IF NOT EXISTS citus;" > /docker-entrypoint-initdb.d/001-create-citus-extension.sql
